@@ -1,0 +1,320 @@
+# ==========================================
+# 1. Data manipulation and analysis
+# ==========================================
+import pandas as pd
+import numpy as np
+
+# ==========================================
+# 2. Data visualization
+# ==========================================
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# ==========================================
+# 3. Statistical analysis
+# ==========================================
+import scipy.stats as stats
+
+# ==========================================
+# 4. Machine learning
+# ==========================================
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.metrics import (
+    accuracy_score,
+    mean_squared_error,
+    classification_report,
+    confusion_matrix
+)
+
+# ==========================================
+# 5. Data preprocessing
+# ==========================================
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
+
+# ==========================================
+# 6. System utilities
+# ==========================================
+import os
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# ==========================================
+# 7. Visualization settings
+# ==========================================
+sns.set_theme(style="whitegrid")
+plt.rcParams["figure.figsize"] = (12, 6)
+
+
+from google.colab import files
+uploaded = files.upload()          # upload again if needed
+
+# Get the first uploaded PDF automatically
+pdf_path = list(uploaded.keys())[0]
+print("Using file:", pdf_path)
+
+# Now use pdf_path with pdfplumber...
+
+
+
+
+import pandas as pd
+
+# Path to the uploaded CSV file
+csv_path = '/content/Google dataset Historical prices 2026 - Sheet1.csv'
+
+# Load the dataset
+df = pd.read_csv(csv_path)
+
+# 1. Display the shape (rows, columns)
+print("Dataset Shape:", df.shape)
+print("\n" + "="*50 + "\n")
+
+# 2. Display the first 5 rows
+print("First 5 rows of the dataset:")
+display(df.head())
+print("\n" + "="*50 + "\n")
+
+# 3. Get info about columns, non-null counts, and data types
+print("Dataset Info:")
+df.info()
+print("\n" + "="*50 + "\n")
+
+# 4. Show summary statistics
+print("Summary Statistics:")
+display(df.describe(include='all'))
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 1. Load the raw data
+raw_df = pd.read_csv('/content/Google dataset Historical prices 2026 - Sheet1.csv')
+
+# 2. Clean the dataset: extract headers from row index 2
+headers = raw_df.iloc[2].values
+cleaned_df = raw_df.iloc[3:].copy()
+cleaned_df.columns = headers
+
+# Drop any rows where Date is null
+cleaned_df = cleaned_df.dropna(subset=['Date'])
+
+# 3. Convert Date to datetime format
+cleaned_df['Date'] = pd.to_datetime(cleaned_df['Date'])
+
+# Sort by Date chronologically
+cleaned_df = cleaned_df.sort_values('Date')
+
+# 4. Clean and convert numeric columns
+numeric_cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+for col in numeric_cols:
+    # Remove commas and convert to numeric values
+    cleaned_df[col] = cleaned_df[col].astype(str).str.replace(',', '')
+    cleaned_df[col] = pd.to_numeric(cleaned_df[col], errors='coerce')
+
+# Drop rows with NaN values in crucial columns after conversion
+cleaned_df = cleaned_df.dropna(subset=['Close', 'Volume'])
+
+# Display the cleaned data summary
+display(cleaned_df.head())
+print(cleaned_df.info())
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Ensure the cleaned data exists; if not, load and clean it here
+if 'cleaned_df' not in globals():
+    raw_df = pd.read_csv('/content/Google dataset Historical prices 2026 - Sheet1.csv')
+    headers = raw_df.iloc[2].values
+    cleaned_df = raw_df.iloc[3:].copy()
+    cleaned_df.columns = headers
+    cleaned_df = cleaned_df.dropna(subset=['Date'])
+    cleaned_df['Date'] = pd.to_datetime(cleaned_df['Date'])
+    cleaned_df = cleaned_df.sort_values('Date')
+    numeric_cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+    for col in numeric_cols:
+        cleaned_df[col] = cleaned_df[col].astype(str).str.replace(',', '')
+        cleaned_df[col] = pd.to_numeric(cleaned_df[col], errors='coerce')
+    cleaned_df = cleaned_df.dropna(subset=['Close', 'Volume'])
+
+# Set visualization style
+sns.set_theme(style="darkgrid")
+fig, axes = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
+
+# Plot Close Price Trend
+sns.lineplot(ax=axes[0], x='Date', y='Close', data=cleaned_df, color='royalblue', linewidth=2, label='Close Price')
+axes[0].set_title('Google Historical Close Price (2026)', fontsize=16, fontweight='bold')
+axes[0].set_ylabel('Stock Price ($)', fontsize=12)
+axes[0].legend(loc='upper left')
+
+# Plot Trading Volume Trend
+sns.lineplot(ax=axes[1], x='Date', y='Volume', data=cleaned_df, color='forestgreen', linewidth=1.5, label='Volume')
+axes[1].set_title('Google Stock Trading Volume (2026)', fontsize=16, fontweight='bold')
+axes[1].set_ylabel('Trading Volume', fontsize=12)
+axes[1].set_xlabel('Date', fontsize=12)
+axes[1].legend(loc='upper left')
+
+plt.tight_layout()
+plt.show()
+
+
+# Select only the numeric columns for correlation
+numeric_cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+correlation_matrix = cleaned_df[numeric_cols].corr()
+
+# Display the correlation matrix
+print("Correlation Matrix:")
+display(correlation_matrix)
+
+# Create a heatmap visualization
+plt.figure(figsize=(10, 8))
+sns.heatmap(
+    correlation_matrix,
+    annot=True,
+    cmap='coolwarm',
+    fmt=".4f",
+    linewidths=0.5,
+    vmin=-1,
+    vmax=1
+)
+plt.title('Correlation Heatmap of Stock Features', fontsize=16, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+
+# 1. Compute rolling statistics
+ts_df = cleaned_df.set_index('Date').sort_index()
+
+ts_df['7-day MA'] = ts_df['Close'].rolling(window=7).mean()
+ts_df['30-day MA'] = ts_df['Close'].rolling(window=30).mean()
+
+# Plot Moving Averages
+plt.figure(figsize=(14, 7))
+plt.plot(ts_df.index, ts_df['Close'], label='Original Close Price', color='blue', alpha=0.4)
+plt.plot(ts_df.index, ts_df['7-day MA'], label='7-day Moving Average', color='orange', linewidth=2)
+plt.plot(ts_df.index, ts_df['30-day MA'], label='30-day Moving Average', color='red', linewidth=2.5)
+
+plt.title('Google Stock Price with Rolling Moving Averages (2026)', fontsize=16, fontweight='bold')
+plt.xlabel('Date', fontsize=12)
+plt.ylabel('Stock Price ($)', fontsize=12)
+plt.legend(fontsize=11)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scipy.stats as stats
+import os
+
+# Fallback data parser to reconstruct 'cleaned_df' from the uploaded PDF
+def parse_pdf_data(pdf_path):
+    try:
+        import pdfplumber
+    except ImportError:
+        import subprocess
+        subprocess.run(["pip", "install", "pdfplumber"], stdout=subprocess.DEVNULL)
+        import pdfplumber
+
+    all_rows = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            table = page.extract_table()
+            if table:
+                all_rows.extend(table)
+
+    raw_df = pd.DataFrame(all_rows)
+
+    # Dynamically find the row that contains 'Date'
+    header_idx = None
+    for idx, row in raw_df.iterrows():
+        if any(isinstance(val, str) and 'Date' in val for val in row.values):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        # Fallback to standard index 2 if 'Date' string isn't found explicitly
+        header_idx = 2
+
+    headers = raw_df.iloc[header_idx].values
+    cleaned_df = raw_df.iloc[header_idx + 1:].copy()
+    cleaned_df.columns = headers
+    cleaned_df = cleaned_df.dropna(subset=['Date'])
+    cleaned_df['Date'] = pd.to_datetime(cleaned_df['Date'])
+    cleaned_df = cleaned_df.sort_values('Date')
+    numeric_cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+    for col in numeric_cols:
+        cleaned_df[col] = cleaned_df[col].astype(str).str.replace(',', '')
+        cleaned_df[col] = pd.to_numeric(cleaned_df[col], errors='coerce')
+    cleaned_df = cleaned_df.dropna(subset=['Close', 'Volume'])
+    return cleaned_df
+
+# Ensure we have our sorted time series dataset
+if 'cleaned_df' in globals():
+    analysis_df = cleaned_df.set_index('Date').sort_index().copy()
+else:
+    # Locate the uploaded PDF
+    pdf_files = [f for f in os.listdir('/content') if f.endswith('.pdf')]
+    if pdf_files:
+        pdf_path = os.path.join('/content', pdf_files[0])
+        cleaned_df = parse_pdf_data(pdf_path)
+        analysis_df = cleaned_df.set_index('Date').sort_index().copy()
+    else:
+        raise FileNotFoundError("Please upload the 'Google dataset Historical prices 2026 - Sheet1.pdf' using cell mgwPGp4E0YKM first.")
+
+# =========================================================================
+# Formula 1: Bollinger Bands (Volatility & Mean-Reversion Patterns)
+# =========================================================================
+period = 20
+analysis_df['Middle_Band'] = analysis_df['Close'].rolling(window=period).mean()
+analysis_df['Std_Dev'] = analysis_df['Close'].rolling(window=period).std()
+analysis_df['Upper_Band'] = analysis_df['Middle_Band'] + (2 * analysis_df['Std_Dev'])
+analysis_df['Lower_Band'] = analysis_df['Middle_Band'] - (2 * analysis_df['Std_Dev'])
+
+# =========================================================================
+# Formula 2: Daily Log Returns (Distribution & Return Patterns)
+# =========================================================================
+analysis_df['Log_Returns'] = np.log(analysis_df['Close'] / analysis_df['Close'].shift(1))
+
+# Plotting the analytical charts
+fig, axes = plt.subplots(2, 1, figsize=(14, 12))
+
+# Chart 1: Bollinger Bands
+axes[0].plot(analysis_df.index, analysis_df['Close'], label='Close Price', color='royalblue', linewidth=1.5)
+axes[0].plot(analysis_df.index, analysis_df['Middle_Band'], label='20-day SMA (Middle Band)', color='darkorange', linestyle='--')
+axes[0].plot(analysis_df.index, analysis_df['Upper_Band'], label='Upper Band (+2 SD)', color='forestgreen', alpha=0.7)
+axes[0].plot(analysis_df.index, analysis_df['Lower_Band'], label='Lower Band (-2 SD)', color='crimson', alpha=0.7)
+axes[0].fill_between(analysis_df.index, analysis_df['Lower_Band'], analysis_df['Upper_Band'], color='gray', alpha=0.1, label='Volatility Range')
+axes[0].set_title('Statistical Pattern: Bollinger Bands Volatility Channels', fontsize=14, fontweight='bold')
+axes[0].set_ylabel('Stock Price ($)', fontsize=12)
+axes[0].legend(loc='upper right')
+axes[0].grid(True, linestyle=':', alpha=0.6)
+
+# Chart 2: Distribution of Log Returns
+sns.histplot(analysis_df['Log_Returns'].dropna(), kde=True, ax=axes[1], color='purple', bins=40, stat='density', label='Log Returns Distribution')
+
+# Overlap a theoretical normal distribution for visual statistical comparison
+mu, std = stats.norm.fit(analysis_df['Log_Returns'].dropna())
+x_range = np.linspace(analysis_df['Log_Returns'].min(), analysis_df['Log_Returns'].max(), 100)
+axes[1].plot(x_range, stats.norm.pdf(x_range, mu, std), 'r--', linewidth=2, label=f'Normal Fit (μ={mu:.4f}, σ={std:.4f})')
+
+# Calculate Skewness and Kurtosis
+skew = stats.skew(analysis_df['Log_Returns'].dropna())
+kurt = stats.kurtosis(analysis_df['Log_Returns'].dropna())
+
+axes[1].set_title(f'Statistical Pattern: Distribution of Returns (Skewness: {skew:.2f}, Kurtosis: {kurt:.2f})', fontsize=14, fontweight='bold')
+axes[1].set_xlabel('Daily Log Return', fontsize=12)
+axes[1].set_ylabel('Density', fontsize=12)
+axes[1].legend(loc='upper left')
+axes[1].grid(True, linestyle=':', alpha=0.6)
+
+plt.tight_layout()
+plt.show()
